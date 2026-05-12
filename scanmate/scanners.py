@@ -43,6 +43,7 @@ def discover_scanners() -> list[ScannerDevice]:
         capture_output=True,
         timeout=30,
         check=False,
+        errors="replace",
     )
     if result.returncode != 0 and not result.stdout:
         raise ScannerError(result.stderr.strip() or "Scanner discovery failed.")
