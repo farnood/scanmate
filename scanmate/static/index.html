@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ScanMate</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <h1>ScanMate</h1>
+          <p>Local home scanning for Paperless consume folders.</p>
+        </div>
+        <button id="new-batch" class="primary">New Scan</button>
+      </section>
+
+      <section class="status-row">
+        <div class="status">
+          <span id="scanner-state" class="dot"></span>
+          <div>
+            <strong>Scanner</strong>
+            <p id="scanner-message">Looking for scanners...</p>
+          </div>
+        </div>
+        <button id="refresh-scanners" class="secondary">Refresh</button>
+      </section>
+
+      <section class="flow">
+        <article class="step">
+          <div class="step-head">
+            <span>1</span>
+            <h2>Pick type</h2>
+          </div>
+          <div id="preset-list" class="preset-grid"></div>
+        </article>
+
+        <article class="step">
+          <div class="step-head">
+            <span>2</span>
+            <h2>Pick destination</h2>
+          </div>
+          <label class="field">
+            <span>Scanner</span>
+            <select id="scanner-select"></select>
+          </label>
+          <label class="field">
+            <span>Destination</span>
+            <select id="destination-select"></select>
+          </label>
+          <div class="destination-path" id="destination-path"></div>
+          <details>
+            <summary>Destination configuration</summary>
+            <form id="destination-form" class="config-form">
+              <label class="field">
+                <span>Name</span>
+                <input id="destination-name" placeholder="Paperless inbox" />
+              </label>
+              <label class="field">
+                <span>Folder path</span>
+                <input id="destination-folder" placeholder="/data/paperless/consume/general" />
+              </label>
+              <button class="secondary" type="submit">Add destination</button>
+            </form>
+          </details>
+        </article>
+
+        <article class="step scan-panel">
+          <div class="step-head">
+            <span>3</span>
+            <h2>Scan and save</h2>
+          </div>
+          <div class="actions">
+            <button id="scan-page" class="primary">Scan page</button>
+            <button id="scan-more" class="secondary">Scan another</button>
+          </div>
+          <div class="settings-row">
+            <label class="field">
+              <span>Output</span>
+              <select id="output-format">
+                <option value="pdf">PDF</option>
+                <option value="jpeg">JPEG</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Save mode</span>
+              <select id="save-mode">
+                <option value="single_file">One PDF</option>
+                <option value="separate_files">Separate files</option>
+              </select>
+            </label>
+          </div>
+          <label class="field">
+            <span>Filename template</span>
+            <input id="filename-template" />
+          </label>
+          <button id="save-batch" class="primary full">Save to destination</button>
+          <p id="activity" class="activity"></p>
+        </article>
+      </section>
+
+      <section class="workspace">
+        <div class="workspace-head">
+          <div>
+            <h2>Preview</h2>
+            <p id="batch-summary">No pages scanned yet.</p>
+          </div>
+          <button id="clear-batch" class="secondary">Clear batch</button>
+        </div>
+        <div id="pages" class="pages empty">
+          <p>Scanned pages will appear here before saving.</p>
+        </div>
+      </section>
+
+      <section class="recent">
+        <h2>Recent saves</h2>
+        <ul id="recent-list"></ul>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
