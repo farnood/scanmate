@@ -2,7 +2,27 @@
 name = "scanmate"
 version = "0.1.0"
 description = "Local-first home scanning station for Paperless-ngx consume folders"
+readme = "README.md"
 requires-python = ">=3.10"
+license = "MIT"
+authors = [
+  { name = "ScanMate contributors" },
+]
+keywords = ["scanner", "paperless-ngx", "sane", "home-server", "document-management"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Web Environment",
+  "Framework :: FastAPI",
+  "Intended Audience :: End Users/Desktop",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Multimedia :: Graphics :: Capture :: Scanners",
+  "Topic :: Office/Business",
+]
 dependencies = [
   "fastapi>=0.111,<1",
   "uvicorn[standard]>=0.30,<1",
@@ -19,6 +39,11 @@ dev = [
 
 [project.scripts]
 scanmate = "scanmate.main:main"
+
+[project.urls]
+Homepage = "https://github.com/your-org/scanmate"
+Issues = "https://github.com/your-org/scanmate/issues"
+Source = "https://github.com/your-org/scanmate"
 
 [build-system]
 requires = ["setuptools>=70", "wheel"]

@@ -2,6 +2,13 @@
 
 ScanMate is a local-first home scan station for Paperless-ngx consume folders. It runs as a small web app on a home server, discovers scanners through SANE, stages scanned pages for preview, and saves PDF or JPEG files into local or mounted destination folders.
 
+The product goal is a household-friendly flow that works well from an iPhone:
+
+1. Pick the scan preset.
+2. Choose single page, multi-page PDF, or separate files.
+3. Choose the Paperless document type and destination.
+4. Scan, preview, and save.
+
 ## MVP features
 
 - Scanner discovery with `scanimage -L`.
@@ -12,6 +19,8 @@ ScanMate is a local-first home scan station for Paperless-ngx consume folders. I
 - PDF output as one multipage PDF or separate PDF files.
 - JPEG output as separate files.
 - Smart filename templates with date, time, scan type, destination, counter, and custom prefix tokens.
+- Mobile-first web UI with a focused daily scan view and separate settings view.
+- Settings UI for scanner preference, destinations, presets, and file naming.
 - Local JSON configuration and local-only processing.
 
 ## Scanner setup
@@ -90,6 +99,8 @@ Supported tokens:
 - `{counter}`: page/file counter like `001`
 - `{custom_prefix}`: optional prefix from save request
 
+If a custom prefix is entered but the template does not include `{custom_prefix}`, ScanMate prepends it automatically.
+
 Examples:
 
 - `2026-05-12_receipt_001.pdf`
@@ -109,6 +120,18 @@ This MVP does not require the Paperless API. Configure destinations to folders t
 
 For LAN exposure, put ScanMate behind your home reverse proxy and add authentication there, or keep it reachable only on a trusted network.
 
+## Project status
+
+ScanMate is alpha software. It is useful for local testing and early home-server deployments, but scanner compatibility still depends on the host SANE setup.
+
+Good next contribution areas:
+
+- Better scanner capability detection.
+- More robust deskew/crop/enhancement profiles.
+- Optional authentication for direct LAN deployments.
+- Paperless-ngx API metadata support after folder-based consume remains solid.
+- More end-to-end tests with sample scanned images.
+
 ## Development
 
 ```bash
@@ -117,3 +140,11 @@ pytest
 ```
 
 The current scanner adapter is intentionally small. Future adapters can be added around the same batch and save pipeline.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## License
+
+MIT. See [LICENSE](LICENSE).
