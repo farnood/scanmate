@@ -95,6 +95,20 @@ p {
   padding: 8px 2px 14px;
 }
 
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.brand-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+}
+
 .topbar p {
   margin-top: 5px;
   font-size: 13px;
@@ -560,6 +574,11 @@ summary {
 
   h1 {
     font-size: 31px;
+  }
+
+  .brand-icon {
+    width: 54px;
+    height: 54px;
   }
 
   h2 {

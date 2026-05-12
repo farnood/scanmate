@@ -5,14 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>ScanMate</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/static/icon.png" />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <main class="app-shell">
       <header class="topbar">
-        <div>
-          <h1>ScanMate</h1>
-          <p id="scanner-message">Looking for scanners...</p>
+        <div class="brand-lockup">
+          <img src="/static/icon.svg" alt="" class="brand-icon" aria-hidden="true" />
+          <div>
+            <h1>ScanMate</h1>
+            <p id="scanner-message">Looking for scanners...</p>
+          </div>
         </div>
         <span id="scanner-state" class="status-dot" aria-label="Scanner status"></span>
       </header>
