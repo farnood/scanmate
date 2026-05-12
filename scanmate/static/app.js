@@ -1,7 +1,20 @@
+const DOCUMENT_TYPES = [
+  { id: "document", name: "Document" },
+  { id: "receipt", name: "Receipt" },
+  { id: "invoice", name: "Invoice" },
+  { id: "letter", name: "Letter" },
+  { id: "personal", name: "Personal" },
+  { id: "warranty", name: "Warranty" },
+  { id: "photo", name: "Photo" },
+  { id: "id_card", name: "ID or card" },
+  { id: "unknown", name: "Other" },
+];
+
 const state = {
   config: null,
   scanners: [],
   selectedPreset: "document",
+  scanMode: "single",
   batch: null,
   recent: [],
 };
@@ -20,50 +33,86 @@ async function api(path, options = {}) {
   return data;
 }
 
+function slug(value, fallback = "item") {
+  const clean = value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+  return clean || `${fallback}_${Date.now()}`;
+}
+
 function setActivity(message, kind = "info") {
   $("activity").textContent = message || "";
   $("activity").dataset.kind = kind;
 }
 
+function setSettingsMessage(message) {
+  $("settings-status").textContent = message || "";
+}
+
 async function loadConfig() {
   state.config = await api("/api/config");
+  if (!state.config.naming.custom_prefix) state.config.naming.custom_prefix = "";
   state.selectedPreset = state.config.presets[0]?.id || "document";
   $("filename-template").value = state.config.naming.template;
+  $("custom-prefix").value = state.config.naming.custom_prefix || "";
+  $("settings-filename-template").value = state.config.naming.template;
+  $("settings-custom-prefix").value = state.config.naming.custom_prefix || "";
+  renderDocumentTypes();
   renderPresets();
   renderDestinations();
+  renderSettings();
+}
+
+async function saveConfigPatch(patch) {
+  state.config = await api("/api/config", {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  });
+  renderPresets();
+  renderDestinations();
+  renderSettings();
+  return state.config;
 }
 
 async function loadScanners() {
   const dot = $("scanner-state");
-  dot.className = "dot";
+  dot.className = "status-dot";
   $("scanner-message").textContent = "Looking for scanners...";
   try {
     const result = await api("/api/scanners");
     state.scanners = result.devices;
     renderScanners();
-    dot.className = `dot ${state.scanners.length ? "ok" : "error"}`;
+    dot.className = `status-dot ${state.scanners.length ? "ok" : "error"}`;
     $("scanner-message").textContent = state.scanners.length
       ? `${state.scanners.length} scanner${state.scanners.length === 1 ? "" : "s"} available`
       : result.message;
   } catch (error) {
     state.scanners = [];
     renderScanners();
-    dot.className = "dot error";
+    dot.className = "status-dot error";
     $("scanner-message").textContent = error.message;
   }
 }
 
 function renderScanners() {
-  const select = $("scanner-select");
-  select.innerHTML = "";
-  if (!state.scanners.length) {
-    select.append(new Option("No scanner found", ""));
-    return;
+  for (const id of ["scanner-select", "settings-scanner-select"]) {
+    const select = $(id);
+    select.innerHTML = "";
+    if (!state.scanners.length) {
+      select.append(new Option("No scanner found", ""));
+      continue;
+    }
+    for (const scanner of state.scanners) {
+      const option = new Option(`${scanner.name} (${scanner.backend})`, scanner.id);
+      if (scanner.id === state.config?.scanner?.default_scanner_id) option.selected = true;
+      select.append(option);
+    }
   }
-  for (const scanner of state.scanners) {
-    const option = new Option(`${scanner.name} (${scanner.backend})`, scanner.id);
-    if (scanner.id === state.config?.scanner?.default_scanner_id) option.selected = true;
-    select.append(option);
+}
+
+function renderDocumentTypes() {
+  const select = $("document-type");
+  select.innerHTML = "";
+  for (const type of DOCUMENT_TYPES) {
+    select.append(new Option(type.name, type.id));
   }
 }
 
@@ -72,30 +121,46 @@ function renderPresets() {
   list.innerHTML = "";
   for (const preset of state.config.presets) {
     const button = document.createElement("button");
-    button.className = `preset ${preset.id === state.selectedPreset ? "active" : ""}`;
-    button.innerHTML = `<strong>${preset.name}</strong><small>${preset.dpi} DPI · ${preset.color_mode} · ${preset.output_format.toUpperCase()}</small>`;
-    button.addEventListener("click", () => {
-      state.selectedPreset = preset.id;
-      $("output-format").value = preset.output_format;
-      $("save-mode").value = preset.multi_page ? "single_file" : "separate_files";
-      renderPresets();
-    });
+    button.className = `preset-card ${preset.id === state.selectedPreset ? "active" : ""}`;
+    button.type = "button";
+    button.innerHTML = `<strong>${preset.name}</strong><span>${preset.dpi} DPI · ${preset.color_mode}</span>`;
+    button.addEventListener("click", () => selectPreset(preset.id));
     list.append(button);
   }
+  applyPresetDefaults();
+}
+
+function selectPreset(presetId) {
+  state.selectedPreset = presetId;
+  const matchingType = DOCUMENT_TYPES.find((type) => type.id === presetId);
+  if (matchingType) $("document-type").value = matchingType.id;
+  applyPresetDefaults();
+  renderPresets();
+}
+
+function applyPresetDefaults() {
   const preset = state.config.presets.find((item) => item.id === state.selectedPreset);
-  if (preset) {
-    $("output-format").value = preset.output_format;
-    $("save-mode").value = preset.multi_page ? "single_file" : "separate_files";
+  if (!preset) return;
+  $("output-format").value = preset.output_format;
+  if (state.scanMode === "multi_pdf") {
+    $("output-format").value = "pdf";
+    $("save-mode").value = "single_file";
+  } else if (state.scanMode === "separate") {
+    $("save-mode").value = "separate_files";
+  } else {
+    $("save-mode").value = "separate_files";
   }
 }
 
 function renderDestinations() {
-  const select = $("destination-select");
-  select.innerHTML = "";
-  for (const destination of state.config.destinations) {
-    const option = new Option(destination.name, destination.id);
-    if (destination.id === state.config.default_destination_id) option.selected = true;
-    select.append(option);
+  for (const id of ["destination-select", "settings-default-destination"]) {
+    const select = $(id);
+    select.innerHTML = "";
+    for (const destination of state.config.destinations) {
+      const option = new Option(destination.name, destination.id);
+      if (destination.id === state.config.default_destination_id) option.selected = true;
+      select.append(option);
+    }
   }
   updateDestinationPath();
 }
@@ -107,6 +172,22 @@ function updateDestinationPath() {
 
 function selectedDestination() {
   return state.config.destinations.find((item) => item.id === $("destination-select").value);
+}
+
+function setScanMode(mode) {
+  state.scanMode = mode;
+  for (const button of document.querySelectorAll("[data-mode]")) {
+    button.classList.toggle("active", button.dataset.mode === mode);
+  }
+  applyPresetDefaults();
+  if (mode === "multi_pdf") {
+    $("output-format").value = "pdf";
+    $("save-mode").value = "single_file";
+  }
+  if (mode === "separate") {
+    $("save-mode").value = "separate_files";
+  }
+  renderBatch();
 }
 
 async function ensureBatch() {
@@ -159,8 +240,9 @@ async function saveBatch() {
         destination_id: $("destination-select").value,
         output_format: $("output-format").value,
         save_mode: $("save-mode").value,
-        scan_type: state.selectedPreset,
+        scan_type: $("document-type").value || state.selectedPreset,
         filename_template: $("filename-template").value,
+        custom_prefix: $("custom-prefix").value,
       }),
     });
     state.recent.unshift(...result.saved_files);
@@ -177,11 +259,14 @@ async function saveBatch() {
 function renderBatch() {
   const pages = $("pages");
   const count = state.batch?.pages?.length || 0;
-  $("batch-summary").textContent = count ? `${count} page${count === 1 ? "" : "s"} ready` : "No pages scanned yet.";
+  const modeLabel = state.scanMode === "multi_pdf" ? "multi-page PDF" : state.scanMode === "separate" ? "separate files" : "single scan";
+  $("batch-summary").textContent = count ? `${count} page${count === 1 ? "" : "s"} ready · ${modeLabel}` : `No pages scanned yet · ${modeLabel}`;
+  $("scan-more").hidden = count === 0 || state.scanMode === "single";
+  $("save-batch").disabled = count === 0;
   pages.innerHTML = "";
   pages.className = count ? "pages" : "pages empty";
   if (!count) {
-    pages.innerHTML = "<p>Scanned pages will appear here before saving.</p>";
+    pages.innerHTML = "<p>Scanned pages appear here before saving.</p>";
     return;
   }
   state.batch.pages.forEach((page, index) => {
@@ -193,9 +278,9 @@ function renderBatch() {
         <strong>Page ${index + 1}</strong>
         <small>Detected: ${page.detected_type.replace("_", " ")}</small>
         <div class="page-actions">
-          <button class="secondary" data-action="up">Up</button>
-          <button class="secondary" data-action="down">Down</button>
-          <button class="secondary" data-action="delete">Delete</button>
+          <button class="secondary" data-action="up" type="button">Up</button>
+          <button class="secondary" data-action="down" type="button">Down</button>
+          <button class="secondary danger" data-action="delete" type="button">Delete</button>
         </div>
       </div>`;
     card.querySelector('[data-action="up"]').disabled = index === 0;
@@ -228,37 +313,218 @@ function renderRecent() {
 
 function setBusy(busy) {
   for (const id of ["scan-page", "scan-more", "save-batch", "new-batch"]) {
-    $(id).disabled = busy;
+    $(id).disabled = busy || (id === "save-batch" && !(state.batch?.pages?.length));
   }
-}
-
-async function addDestination(event) {
-  event.preventDefault();
-  const name = $("destination-name").value.trim();
-  const path = $("destination-folder").value.trim();
-  if (!name || !path) {
-    setActivity("Destination name and folder path are required.", "error");
-    return;
-  }
-  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || `destination_${Date.now()}`;
-  const destinations = [...state.config.destinations, { id, name, path, paperless_consume: true, description: "" }];
-  state.config = await api("/api/config", {
-    method: "PUT",
-    body: JSON.stringify({ destinations, default_destination_id: id }),
-  });
-  $("destination-name").value = "";
-  $("destination-folder").value = "";
-  renderDestinations();
-  setActivity("Destination added.");
 }
 
 function resetBatch() {
   state.batch = null;
   renderBatch();
-  setActivity("");
+  setActivity("Ready when the scanner is ready.");
+}
+
+function switchView(view) {
+  for (const tab of document.querySelectorAll(".tab")) {
+    tab.classList.toggle("active", tab.dataset.view === view);
+  }
+  $("scan-view").classList.toggle("active", view === "scan");
+  $("settings-view").classList.toggle("active", view === "settings");
+}
+
+function renderSettings() {
+  renderDestinationSettings();
+  renderPresetSettings();
+  renderScanners();
+  $("settings-filename-template").value = state.config.naming.template;
+  $("settings-custom-prefix").value = state.config.naming.custom_prefix || "";
+}
+
+function renderDestinationSettings() {
+  const list = $("destination-settings-list");
+  list.innerHTML = "";
+  state.config.destinations.forEach((destination, index) => {
+    const card = document.createElement("article");
+    card.className = "settings-card";
+    card.innerHTML = `
+      <details>
+        <summary><strong>${destination.name || "New destination"}</strong><span>${escapeHtml(destination.path)}</span></summary>
+        <label class="field"><span>Name</span><input data-field="name" value="${escapeHtml(destination.name)}"></label>
+        <label class="field"><span>Folder path</span><input data-field="path" value="${escapeHtml(destination.path)}"></label>
+        <label class="field"><span>Description</span><input data-field="description" value="${escapeHtml(destination.description || "")}"></label>
+        <label class="check-row"><input data-field="paperless_consume" type="checkbox" ${destination.paperless_consume ? "checked" : ""}> Paperless consume folder</label>
+        <button class="quiet-button danger-text" data-remove type="button">Remove destination</button>
+      </details>
+    `;
+    bindDestinationCard(card, index);
+    list.append(card);
+  });
+}
+
+function bindDestinationCard(card, index) {
+  card.querySelector("[data-remove]").addEventListener("click", () => {
+    state.config.destinations.splice(index, 1);
+    if (!state.config.destinations.length) addDestinationDraft();
+    renderDestinations();
+    renderDestinationSettings();
+  });
+  for (const input of card.querySelectorAll("[data-field]")) {
+    input.addEventListener("input", () => updateDestinationDraft(index, input));
+    input.addEventListener("change", () => updateDestinationDraft(index, input));
+  }
+}
+
+function updateDestinationDraft(index, input) {
+  const field = input.dataset.field;
+  const destination = state.config.destinations[index];
+  destination[field] = input.type === "checkbox" ? input.checked : input.value;
+  if (field === "name") destination.id = slug(input.value, "destination");
+  renderDestinations();
+}
+
+function addDestinationDraft() {
+  state.config.destinations.push({
+    id: `destination_${Date.now()}`,
+    name: "New destination",
+    path: "/paperless/consume/new",
+    description: "",
+    paperless_consume: true,
+  });
+  renderDestinations();
+  renderDestinationSettings();
+}
+
+async function saveDestinations() {
+  const destinations = state.config.destinations.map((destination) => ({
+    ...destination,
+    id: slug(destination.name, "destination"),
+  }));
+  const defaultDestinationId = $("settings-default-destination").value || destinations[0]?.id || "";
+  await saveConfigPatch({ destinations, default_destination_id: defaultDestinationId });
+  setSettingsMessage("Destinations saved.");
+}
+
+function renderPresetSettings() {
+  const list = $("preset-settings-list");
+  list.innerHTML = "";
+  state.config.presets.forEach((preset, index) => {
+    const card = document.createElement("article");
+    card.className = "settings-card";
+    card.innerHTML = `
+      <details>
+        <summary><strong>${preset.name || "New preset"}</strong><span>${preset.dpi} DPI · ${preset.color_mode} · ${preset.output_format.toUpperCase()}</span></summary>
+        <div class="settings-grid">
+          <label class="field"><span>Name</span><input data-field="name" value="${escapeHtml(preset.name)}"></label>
+          <label class="field"><span>DPI</span><input data-field="dpi" type="number" min="75" max="2400" value="${preset.dpi}"></label>
+          <label class="field"><span>Color</span><select data-field="color_mode">${options(["Color", "Gray", "Lineart"], preset.color_mode)}</select></label>
+          <label class="field"><span>Page size</span><input data-field="page_size" value="${escapeHtml(preset.page_size)}"></label>
+          <label class="field"><span>Output</span><select data-field="output_format">${options(["pdf", "jpeg"], preset.output_format)}</select></label>
+          <label class="field"><span>Compression</span><select data-field="compression">${options(["low", "medium", "high"], preset.compression)}</select></label>
+          <label class="field"><span>Enhancement</span><select data-field="enhancement_profile">${enhancementOptions(preset.enhancement_profile)}</select></label>
+          <label class="check-row"><input data-field="multi_page" type="checkbox" ${preset.multi_page ? "checked" : ""}> Usually multi-page</label>
+          <label class="field wide"><span>Description</span><input data-field="description" value="${escapeHtml(preset.description || "")}"></label>
+        </div>
+        <button class="quiet-button danger-text" data-remove type="button">Remove preset</button>
+      </details>
+    `;
+    bindPresetCard(card, index);
+    list.append(card);
+  });
+}
+
+function bindPresetCard(card, index) {
+  card.querySelector("[data-remove]").addEventListener("click", () => {
+    state.config.presets.splice(index, 1);
+    if (!state.config.presets.length) addPresetDraft();
+    state.selectedPreset = state.config.presets[0]?.id || "document";
+    renderPresets();
+    renderPresetSettings();
+  });
+  for (const input of card.querySelectorAll("[data-field]")) {
+    input.addEventListener("input", () => updatePresetDraft(index, input));
+    input.addEventListener("change", () => updatePresetDraft(index, input));
+  }
+}
+
+function updatePresetDraft(index, input) {
+  const preset = state.config.presets[index];
+  const field = input.dataset.field;
+  if (input.type === "checkbox") {
+    preset[field] = input.checked;
+  } else if (input.type === "number") {
+    preset[field] = Number(input.value);
+  } else {
+    preset[field] = input.value;
+  }
+  if (field === "name") preset.id = slug(input.value, "preset");
+  renderPresets();
+}
+
+function addPresetDraft() {
+  state.config.presets.push({
+    id: `preset_${Date.now()}`,
+    name: "New preset",
+    description: "",
+    dpi: 300,
+    color_mode: "Gray",
+    page_size: "Auto",
+    output_format: "pdf",
+    compression: "medium",
+    enhancement_profile: state.config.enhancements[0]?.id || "clean_document",
+    multi_page: false,
+  });
+  renderPresets();
+  renderPresetSettings();
+}
+
+async function savePresets() {
+  const presets = state.config.presets.map((preset) => ({ ...preset, id: slug(preset.name, "preset") }));
+  await saveConfigPatch({ presets });
+  state.selectedPreset = state.config.presets[0]?.id || state.selectedPreset;
+  setSettingsMessage("Presets saved.");
+}
+
+async function saveNaming() {
+  await saveConfigPatch({
+    naming: {
+      template: $("settings-filename-template").value || "{date}_{scan_type}_{counter}",
+      custom_prefix: $("settings-custom-prefix").value,
+    },
+  });
+  $("filename-template").value = state.config.naming.template;
+  $("custom-prefix").value = state.config.naming.custom_prefix || "";
+  setSettingsMessage("Naming saved.");
+}
+
+async function saveScannerSettings() {
+  await saveConfigPatch({ default_scanner_id: $("settings-scanner-select").value });
+  setSettingsMessage("Scanner preference saved.");
+}
+
+function options(values, selected) {
+  return values.map((value) => `<option value="${value}" ${value === selected ? "selected" : ""}>${value}</option>`).join("");
+}
+
+function enhancementOptions(selected) {
+  return state.config.enhancements
+    .map((profile) => `<option value="${profile.id}" ${profile.id === selected ? "selected" : ""}>${profile.name}</option>`)
+    .join("");
+}
+
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
 }
 
 function bindEvents() {
+  for (const tab of document.querySelectorAll(".tab")) {
+    tab.addEventListener("click", () => switchView(tab.dataset.view));
+  }
+  for (const button of document.querySelectorAll("[data-mode]")) {
+    button.addEventListener("click", () => setScanMode(button.dataset.mode));
+  }
   $("refresh-scanners").addEventListener("click", loadScanners);
   $("new-batch").addEventListener("click", resetBatch);
   $("clear-batch").addEventListener("click", resetBatch);
@@ -266,7 +532,12 @@ function bindEvents() {
   $("scan-more").addEventListener("click", scanPage);
   $("save-batch").addEventListener("click", saveBatch);
   $("destination-select").addEventListener("change", updateDestinationPath);
-  $("destination-form").addEventListener("submit", addDestination);
+  $("add-destination").addEventListener("click", addDestinationDraft);
+  $("save-destinations").addEventListener("click", saveDestinations);
+  $("add-preset").addEventListener("click", addPresetDraft);
+  $("save-presets").addEventListener("click", savePresets);
+  $("save-naming").addEventListener("click", saveNaming);
+  $("save-scanner-settings").addEventListener("click", saveScannerSettings);
 }
 
 async function boot() {

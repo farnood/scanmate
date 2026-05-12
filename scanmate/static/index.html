@@ -2,81 +2,92 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>ScanMate</title>
     <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <main class="shell">
-      <section class="hero">
+    <main class="app-shell">
+      <header class="topbar">
         <div>
           <h1>ScanMate</h1>
-          <p>Local home scanning for Paperless consume folders.</p>
+          <p id="scanner-message">Looking for scanners...</p>
         </div>
-        <button id="new-batch" class="primary">New Scan</button>
-      </section>
+        <span id="scanner-state" class="status-dot" aria-label="Scanner status"></span>
+      </header>
 
-      <section class="status-row">
-        <div class="status">
-          <span id="scanner-state" class="dot"></span>
+      <nav class="view-tabs" aria-label="Main navigation">
+        <button class="tab active" data-view="scan" type="button">Scan</button>
+        <button class="tab" data-view="settings" type="button">Settings</button>
+      </nav>
+
+      <section id="scan-view" class="view active" aria-labelledby="scan-heading">
+        <div class="scan-heading">
           <div>
-            <strong>Scanner</strong>
-            <p id="scanner-message">Looking for scanners...</p>
+            <h2 id="scan-heading">New scan</h2>
+            <p>Choose what this paper is, where it should go, then scan.</p>
           </div>
+          <button id="new-batch" class="quiet-button" type="button">Reset</button>
         </div>
-        <button id="refresh-scanners" class="secondary">Refresh</button>
-      </section>
 
-      <section class="flow">
-        <article class="step">
-          <div class="step-head">
-            <span>1</span>
-            <h2>Pick type</h2>
-          </div>
-          <div id="preset-list" class="preset-grid"></div>
-        </article>
+        <section class="daily-flow" aria-label="Daily scan workflow">
+          <article class="flow-block">
+            <div class="block-title">
+              <span>1</span>
+              <h3>Preset</h3>
+            </div>
+            <div id="preset-list" class="preset-strip"></div>
+          </article>
 
-        <article class="step">
-          <div class="step-head">
-            <span>2</span>
-            <h2>Pick destination</h2>
-          </div>
-          <label class="field">
-            <span>Scanner</span>
-            <select id="scanner-select"></select>
-          </label>
-          <label class="field">
-            <span>Destination</span>
-            <select id="destination-select"></select>
-          </label>
-          <div class="destination-path" id="destination-path"></div>
-          <details>
-            <summary>Destination configuration</summary>
-            <form id="destination-form" class="config-form">
-              <label class="field">
-                <span>Name</span>
-                <input id="destination-name" placeholder="Paperless inbox" />
-              </label>
-              <label class="field">
-                <span>Folder path</span>
-                <input id="destination-folder" placeholder="/data/paperless/consume/general" />
-              </label>
-              <button class="secondary" type="submit">Add destination</button>
-            </form>
-          </details>
-        </article>
+          <article class="flow-block">
+            <div class="block-title">
+              <span>2</span>
+              <h3>Pages</h3>
+            </div>
+            <div class="segmented" id="scan-mode-group" role="group" aria-label="Page mode">
+              <button class="segment active" data-mode="single" type="button">Single</button>
+              <button class="segment" data-mode="multi_pdf" type="button">Multi-page PDF</button>
+              <button class="segment" data-mode="separate" type="button">Separate files</button>
+            </div>
+          </article>
 
-        <article class="step scan-panel">
-          <div class="step-head">
-            <span>3</span>
-            <h2>Scan and save</h2>
+          <article class="flow-block">
+            <div class="block-title">
+              <span>3</span>
+              <h3>Paperless</h3>
+            </div>
+            <label class="field">
+              <span>Document type</span>
+              <select id="document-type"></select>
+            </label>
+            <label class="field">
+              <span>Destination</span>
+              <select id="destination-select"></select>
+            </label>
+            <p id="destination-path" class="path-note"></p>
+          </article>
+        </section>
+
+        <section class="action-card" aria-label="Scan actions">
+          <div>
+            <strong id="batch-summary">No pages scanned yet.</strong>
+            <p id="activity">Ready when the scanner is ready.</p>
           </div>
-          <div class="actions">
-            <button id="scan-page" class="primary">Scan page</button>
-            <button id="scan-more" class="secondary">Scan another</button>
+          <div class="action-stack">
+            <button id="scan-page" class="primary large" type="button">Scan page</button>
+            <button id="scan-more" class="secondary large" type="button">Scan another</button>
+            <button id="save-batch" class="primary save" type="button">Save scan</button>
           </div>
-          <div class="settings-row">
+        </section>
+
+        <details class="advanced-panel">
+          <summary>Advanced scan options</summary>
+          <div class="advanced-grid">
+            <label class="field">
+              <span>Scanner</span>
+              <select id="scanner-select"></select>
+            </label>
             <label class="field">
               <span>Output</span>
               <select id="output-format">
@@ -91,32 +102,102 @@
                 <option value="separate_files">Separate files</option>
               </select>
             </label>
+            <label class="field">
+              <span>Custom prefix</span>
+              <input id="custom-prefix" placeholder="taxes, school, car..." />
+            </label>
+            <label class="field wide">
+              <span>Filename template</span>
+              <input id="filename-template" />
+            </label>
+          </div>
+        </details>
+
+        <section class="preview-panel">
+          <div class="section-head">
+            <h2>Preview</h2>
+            <button id="clear-batch" class="quiet-button" type="button">Clear pages</button>
+          </div>
+          <div id="pages" class="pages empty">
+            <p>Scanned pages appear here before saving.</p>
+          </div>
+        </section>
+
+        <section class="recent-panel">
+          <h2>Recent saves</h2>
+          <ul id="recent-list"></ul>
+        </section>
+      </section>
+
+      <section id="settings-view" class="view" aria-labelledby="settings-heading">
+        <div class="scan-heading">
+          <div>
+            <h2 id="settings-heading">Settings</h2>
+            <p>Edit household presets, destinations, naming, and scanner preferences.</p>
+            <p id="settings-status" class="settings-status"></p>
+          </div>
+          <button id="refresh-scanners" class="quiet-button" type="button">Refresh scanners</button>
+        </div>
+
+        <section class="settings-section">
+          <div class="section-head">
+            <div>
+              <h2>Scanner</h2>
+              <p>Pick the default device for the home scan station.</p>
+            </div>
+          </div>
+          <label class="field">
+            <span>Default scanner</span>
+            <select id="settings-scanner-select"></select>
+          </label>
+          <button id="save-scanner-settings" class="secondary full" type="button">Save scanner preference</button>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-head">
+            <div>
+              <h2>Destinations</h2>
+              <p>Folders can be local paths or mounted SMB/NFS/Paperless consume folders.</p>
+            </div>
+            <button id="add-destination" class="secondary" type="button">Add</button>
+          </div>
+          <label class="field">
+            <span>Default destination</span>
+            <select id="settings-default-destination"></select>
+          </label>
+          <div id="destination-settings-list" class="settings-list"></div>
+          <button id="save-destinations" class="primary full" type="button">Save destinations</button>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-head">
+            <div>
+              <h2>Presets</h2>
+              <p>Keep the daily choices short, but tune the scanner defaults underneath.</p>
+            </div>
+            <button id="add-preset" class="secondary" type="button">Add</button>
+          </div>
+          <div id="preset-settings-list" class="settings-list"></div>
+          <button id="save-presets" class="primary full" type="button">Save presets</button>
+        </section>
+
+        <section class="settings-section">
+          <div class="section-head">
+            <div>
+              <h2>File naming</h2>
+              <p>Use date, time, type, destination, counter, and optional custom prefix.</p>
+            </div>
           </div>
           <label class="field">
             <span>Filename template</span>
-            <input id="filename-template" />
+            <input id="settings-filename-template" />
           </label>
-          <button id="save-batch" class="primary full">Save to destination</button>
-          <p id="activity" class="activity"></p>
-        </article>
-      </section>
-
-      <section class="workspace">
-        <div class="workspace-head">
-          <div>
-            <h2>Preview</h2>
-            <p id="batch-summary">No pages scanned yet.</p>
-          </div>
-          <button id="clear-batch" class="secondary">Clear batch</button>
-        </div>
-        <div id="pages" class="pages empty">
-          <p>Scanned pages will appear here before saving.</p>
-        </div>
-      </section>
-
-      <section class="recent">
-        <h2>Recent saves</h2>
-        <ul id="recent-list"></ul>
+          <label class="field">
+            <span>Default custom prefix</span>
+            <input id="settings-custom-prefix" placeholder="Optional" />
+          </label>
+          <button id="save-naming" class="primary full" type="button">Save naming</button>
+        </section>
       </section>
     </main>
     <script src="/static/app.js"></script>
