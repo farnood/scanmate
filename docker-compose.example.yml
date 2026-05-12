@@ -1,0 +1,16 @@
+services:
+  scanmate:
+    build: .
+    container_name: scanmate
+    network_mode: host
+    environment:
+      SCANMATE_CONFIG_DIR: /config
+      SCANMATE_DATA_DIR: /data/scanmate
+      SCANMATE_DEFAULT_DESTINATION: /paperless/consume/general
+    volumes:
+      - ./config:/config
+      - ./data:/data/scanmate
+      - /srv/paperless/consume:/paperless/consume
+      # USB scanners usually need this device mount. Network scanners may not.
+      - /dev/bus/usb:/dev/bus/usb
+    restart: unless-stopped
