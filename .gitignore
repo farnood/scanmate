@@ -10,3 +10,5 @@ build/
 .DS_Store
 data/
 config/
+docker-compose.yml
+airscan.conf

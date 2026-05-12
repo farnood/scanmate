@@ -41,9 +41,9 @@ dev = [
 scanmate = "scanmate.main:main"
 
 [project.urls]
-Homepage = "https://github.com/your-org/scanmate"
-Issues = "https://github.com/your-org/scanmate/issues"
-Source = "https://github.com/your-org/scanmate"
+Homepage = "https://github.com/farnood/scanmate"
+Issues = "https://github.com/farnood/scanmate/issues"
+Source = "https://github.com/farnood/scanmate"
 
 [build-system]
 requires = ["setuptools>=70", "wheel"]
