@@ -43,6 +43,12 @@ def update_config(update: ConfigUpdate):
         config.default_destination_id = update.default_destination_id
     if update.destinations is not None:
         config.destinations = update.destinations
+        if not any(destination.id == config.default_destination_id for destination in config.destinations):
+            config.default_destination_id = config.destinations[0].id if config.destinations else ""
+    if update.presets is not None:
+        config.presets = update.presets
+    if update.enhancements is not None:
+        config.enhancements = update.enhancements
     if update.naming is not None:
         config.naming = update.naming
     if update.default_scanner_id is not None:

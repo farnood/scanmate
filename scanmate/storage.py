@@ -32,6 +32,7 @@ def render_filename(
     now: datetime | None = None,
 ) -> str:
     current = now or datetime.now()
+    has_custom_prefix_token = "{custom_prefix}" in template
     values = {
         "date": current.strftime("%Y-%m-%d"),
         "time": current.strftime("%H%M%S"),
@@ -42,6 +43,8 @@ def render_filename(
     }
     name = template.format(**values)
     name = safe_slug(name)
+    if custom_prefix and not has_custom_prefix_token:
+        name = f"{safe_slug(custom_prefix)}_{name}"
     return f"{name}.{extension}"
 
 

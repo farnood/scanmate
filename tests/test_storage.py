@@ -22,3 +22,19 @@ def test_render_filename_uses_template_tokens():
     )
 
     assert filename == "2026-05-12_090405_paperless_receipts_receipt_scan_007_hp_desk.pdf"
+
+
+def test_render_filename_prepends_custom_prefix_when_template_omits_token():
+    destination = Destination(id="receipts", name="Paperless Receipts", path="/consume/receipts")
+
+    filename = render_filename(
+        "{date}_{scan_type}_{counter}",
+        scan_type="receipt",
+        destination=destination,
+        counter=1,
+        custom_prefix="Health Insurance",
+        extension="pdf",
+        now=datetime(2026, 5, 12, 9, 4, 5),
+    )
+
+    assert filename == "health_insurance_2026-05-12_receipt_001.pdf"

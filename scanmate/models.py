@@ -88,5 +88,7 @@ class MovePageRequest(BaseModel):
 class ConfigUpdate(BaseModel):
     default_destination_id: str | None = None
     destinations: list[Destination] | None = None
+    presets: list[ScanPreset] | None = None
+    enhancements: list[EnhancementProfile] | None = None
     naming: NamingConfig | None = None
     default_scanner_id: str | None = None
