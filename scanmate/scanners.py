@@ -61,7 +61,7 @@ def scan_page(scanner_id: str, preset: ScanPreset, output_path: Path) -> None:
         f"--resolution={preset.dpi}",
         f"--mode={preset.color_mode}",
         "--format=png",
-        "--output-file",
+        "-o",
         str(output_path),
     ]
 
