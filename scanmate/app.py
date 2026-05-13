@@ -100,7 +100,7 @@ def scan(request: ScanRequest):
 
     try:
         scan_page(request.scanner_id, preset, raw_path)
-        apply_enhancement(raw_path, image_path, enhancement)
+        apply_enhancement(raw_path, image_path, enhancement, preserve_color=preset.color_mode == "Color")
         make_preview(image_path, preview_path)
         detected_type = classify_scan(image_path)
         page = batches.add_page(batch["id"], image_path, preview_path, detected_type)

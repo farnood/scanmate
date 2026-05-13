@@ -7,17 +7,19 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageOps, ImageStat
 from .models import EnhancementProfile
 
 
-def apply_enhancement(source: Path, target: Path, profile: EnhancementProfile) -> None:
+def apply_enhancement(source: Path, target: Path, profile: EnhancementProfile, *, preserve_color: bool = False) -> None:
     with Image.open(source) as image:
         img = ImageOps.exif_transpose(image)
-        if not profile.preserve_color:
+        keep_color = preserve_color or profile.preserve_color
+        force_black_and_white = profile.id == "high_contrast_bw"
+        if not keep_color or force_black_and_white:
             img = img.convert("L")
             img = ImageOps.autocontrast(img)
             if profile.remove_noise:
                 img = img.filter(ImageFilter.MedianFilter(size=3))
             if profile.sharpen_text:
                 img = img.filter(ImageFilter.SHARPEN)
-            if profile.id == "high_contrast_bw":
+            if force_black_and_white:
                 img = img.point(lambda value: 255 if value > 170 else 0, mode="1")
         else:
             img = img.convert("RGB")
