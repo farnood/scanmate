@@ -133,22 +133,6 @@ p {
   box-shadow: 0 0 0 6px rgba(170, 53, 42, 0.14);
 }
 
-.view-tabs {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  padding: 7px;
-  margin: 0 -2px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(247, 246, 241, 0.94);
-  backdrop-filter: blur(14px);
-}
-
-.tab,
 .segment {
   min-height: 42px;
   color: var(--muted);
@@ -157,7 +141,6 @@ p {
   font-weight: 750;
 }
 
-.tab.active,
 .segment.active {
   color: var(--text);
   background: var(--panel);
@@ -420,13 +403,42 @@ select:focus {
 .advanced-panel,
 .preview-panel,
 .recent-panel,
-.settings-section {
+.settings-section,
+.settings-entry {
   margin-top: 12px;
 }
 
 summary {
   cursor: pointer;
-  list-style-position: outside;
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+.advanced-panel > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.advanced-panel > summary::after,
+.settings-card summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.advanced-panel[open] > summary::after,
+.settings-card details[open] summary::after {
+  transform: rotate(225deg);
 }
 
 .advanced-grid,
@@ -531,16 +543,24 @@ summary {
 
 .settings-card summary {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px;
+  align-items: center;
   color: var(--text);
-  list-style-position: outside;
 }
 
 .settings-card summary span {
+  grid-column: 1;
   color: var(--muted);
   font-size: 12px;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+.settings-card summary::after {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  margin-right: 2px;
 }
 
 .settings-card details[open] summary {
@@ -614,7 +634,7 @@ summary {
   }
 
   .action-stack {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .advanced-grid,
@@ -639,9 +659,5 @@ summary {
 
   .preset-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .view-tabs {
-    max-width: 360px;
   }
 }

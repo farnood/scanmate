@@ -21,11 +21,6 @@
         <span id="scanner-state" class="status-dot" aria-label="Scanner status"></span>
       </header>
 
-      <nav class="view-tabs" aria-label="Main navigation">
-        <button class="tab active" data-view="scan" type="button">Scan</button>
-        <button class="tab" data-view="settings" type="button">Settings</button>
-      </nav>
-
       <section id="scan-view" class="view active" aria-labelledby="scan-heading">
         <div class="scan-heading">
           <div>
@@ -80,7 +75,6 @@
           </div>
           <div class="action-stack">
             <button id="scan-page" class="primary large" type="button">Scan page</button>
-            <button id="scan-more" class="secondary large" type="button">Scan another</button>
             <button id="save-batch" class="primary save" type="button">Save scan</button>
           </div>
         </section>
@@ -131,6 +125,8 @@
           <h2>Recent saves</h2>
           <ul id="recent-list"></ul>
         </section>
+
+        <button class="settings-entry secondary full" data-view="settings" type="button">Settings</button>
       </section>
 
       <section id="settings-view" class="view" aria-labelledby="settings-heading">
@@ -140,8 +136,10 @@
             <p>Edit household presets, destinations, naming, and scanner preferences.</p>
             <p id="settings-status" class="settings-status"></p>
           </div>
-          <button id="refresh-scanners" class="quiet-button" type="button">Refresh scanners</button>
+          <button class="quiet-button" data-view="scan" type="button">Back to scan</button>
         </div>
+
+        <button id="refresh-scanners" class="secondary full" type="button">Refresh scanners</button>
 
         <section class="settings-section">
           <div class="section-head">

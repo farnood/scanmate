@@ -261,7 +261,7 @@ function renderBatch() {
   const count = state.batch?.pages?.length || 0;
   const modeLabel = state.scanMode === "multi_pdf" ? "multi-page PDF" : state.scanMode === "separate" ? "separate files" : "single scan";
   $("batch-summary").textContent = count ? `${count} page${count === 1 ? "" : "s"} ready · ${modeLabel}` : `No pages scanned yet · ${modeLabel}`;
-  $("scan-more").hidden = count === 0 || state.scanMode === "single";
+  $("scan-page").textContent = count && state.scanMode !== "single" ? "Scan another page" : count ? "Scan again" : "Scan page";
   $("save-batch").disabled = count === 0;
   pages.innerHTML = "";
   pages.className = count ? "pages" : "pages empty";
@@ -312,7 +312,7 @@ function renderRecent() {
 }
 
 function setBusy(busy) {
-  for (const id of ["scan-page", "scan-more", "save-batch", "new-batch"]) {
+  for (const id of ["scan-page", "save-batch", "new-batch"]) {
     $(id).disabled = busy || (id === "save-batch" && !(state.batch?.pages?.length));
   }
 }
@@ -324,11 +324,9 @@ function resetBatch() {
 }
 
 function switchView(view) {
-  for (const tab of document.querySelectorAll(".tab")) {
-    tab.classList.toggle("active", tab.dataset.view === view);
-  }
   $("scan-view").classList.toggle("active", view === "scan");
   $("settings-view").classList.toggle("active", view === "settings");
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function renderSettings() {
@@ -519,8 +517,8 @@ function escapeHtml(value = "") {
 }
 
 function bindEvents() {
-  for (const tab of document.querySelectorAll(".tab")) {
-    tab.addEventListener("click", () => switchView(tab.dataset.view));
+  for (const button of document.querySelectorAll("[data-view]")) {
+    button.addEventListener("click", () => switchView(button.dataset.view));
   }
   for (const button of document.querySelectorAll("[data-mode]")) {
     button.addEventListener("click", () => setScanMode(button.dataset.mode));
@@ -529,7 +527,6 @@ function bindEvents() {
   $("new-batch").addEventListener("click", resetBatch);
   $("clear-batch").addEventListener("click", resetBatch);
   $("scan-page").addEventListener("click", scanPage);
-  $("scan-more").addEventListener("click", scanPage);
   $("save-batch").addEventListener("click", saveBatch);
   $("destination-select").addEventListener("change", updateDestinationPath);
   $("add-destination").addEventListener("click", addDestinationDraft);
